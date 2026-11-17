@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0f0f0f" />
+<title>Capital Studio</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #181818;
+    --bg3: #242424;
+    --border: #2f2f2f;
+    --text: #f1f1f1;
+    --muted: #aaaaaa;
+    --accent: #3ea6ff;
+    --red: #ff0033;
+    --green: #2ba640;
+    --gold: #f5b400;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px; overflow: hidden;
+  }
+  .app { display: flex; flex-direction: column; height: 100dvh; }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+  .brand-badge {
+    background: var(--red); color: #fff; font-size: 10px; padding: 2px 6px;
+    border-radius: 4px; font-weight: 800; letter-spacing: .5px;
+  }
+  .quota-pill {
+    font-size: 11px; color: var(--muted); background: var(--bg3);
+    padding: 4px 8px; border-radius: 99px; border: 1px solid var(--border);
+  }
+  main { flex: 1; overflow: hidden; position: relative; }
+  .tab-pane { display: none; height: 100%; overflow-y: auto; padding: 12px; }
+  .tab-pane.active { display: block; }
+  #tab-chat.active { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+
+  /* Bottom Nav */
+  nav {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0;
+  }
+  .nav-btn {
+    background: none; border: none; color: var(--muted); padding: 9px 4px;
+    font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
+  }
+  .nav-btn.active { color: var(--text); font-weight: 600; }
+  .nav-btn.active .nav-icon { color: var(--accent); }
+  .nav-icon { font-size: 18px; line-height: 1; }
+
+  /* Chat UI */
+  .chat-topbar {
+    display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+    background: var(--bg2); border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0;
+  }
+  .thread-select {
+    flex: 1; min-width: 120px; background: var(--bg3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-size: 12px;
+  }
+  .chip-bar {
+    display: flex; gap: 6px; padding: 7px 12px; overflow-x: auto;
+    border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0;
+  }
+  .chip {
+    white-space: nowrap; background: var(--bg3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 99px; padding: 5px 10px;
+    font-size: 11px; cursor: pointer;
+  }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .msg {
+    max-width: 90%; padding: 10px 12px; border-radius: 12px; line-height: 1.45;
+    word-wrap: break-word; font-size: 13.5px;
+  }
+  .msg.user { align-self: flex-end; background: #1e3a5f; border: 1px solid #2b5282; }
+  .msg.model { align-self: flex-start; background: var(--bg2); border: 1px solid var(--border); }
+  .msg.tool-log {
+    align-self: flex-start; background: #141c24; border: 1px dashed #2e4b66;
+    color: var(--accent); font-size: 11.5px; padding: 6px 10px;
+  }
+  .msg-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .msg-imgs img { max-width: 110px; max-height: 110px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); }
+  .msg h1, .msg h2, .msg h3 { font-size: 14px; margin: 8px 0 4px; color: var(--accent); }
+  .msg ul { margin: 4px 0; padding-left: 18px; }
+  .msg a { color: var(--accent); }
+  .msg code { background: #000; padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+
+  .pending-imgs {
+    display: flex; gap: 6px; padding: 6px 12px; background: var(--bg2);
+    border-top: 1px solid var(--border); overflow-x: auto; flex-shrink: 0;
+  }
+  .pending-imgs:empty { display: none; }
+  .pending-thumb { position: relative; display: inline-block; }
+  .pending-thumb img { width: 54px; height: 54px; object-fit: cover; border-radius: 6px; border: 1px solid var(--accent); }
+  .pending-thumb button {
+    position: absolute; top: -5px; right: -5px; width: 18px; height: 18px;
+    border-radius: 50%; border: none; background: var(--red); color: #fff; font-size: 11px; cursor: pointer;
+  }
+
+  .chat-input-bar {
+    display: flex; align-items: flex-end; gap: 6px; padding: 8px 10px;
+    background: var(--bg2); border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  .chat-input-bar textarea {
+    flex: 1; background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 13.5px;
+    resize: none; max-height: 110px; min-height: 38px;
+  }
+
+  /* Buttons & Cards */
+  .btn {
+    background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 11px; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn-red { background: var(--red); color: #fff; border-color: var(--red); }
+  .btn-sm { padding: 5px 8px; font-size: 11px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px; margin-bottom: 10px;
+  }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .space-between { justify-content: space-between; }
+  input[type="text"], input[type="password"], input[type="number"], select, textarea.box {
+    width: 100%; background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit;
+  }
+  label { display: block; font-size: 11.5px; color: var(--muted); margin: 8px 0 4px; }
+
+  .outlier-card {
+    display: flex; gap: 10px; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px; margin-bottom: 9px;
+  }
+  .outlier-thumb {
+    width: 68px; height: 102px; border-radius: 6px; object-fit: cover;
+    background: #000; flex-shrink: 0;
+  }
+  .outlier-body { flex: 1; min-width: 0; }
+  .outlier-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; line-height: 1.3; }
+  .badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 5px 0; }
+  .badge {
+    font-size: 10.5px; padding: 2px 6px; border-radius: 4px; font-weight: 700;
+    background: var(--bg3); border: 1px solid var(--border);
+  }
+  .b-green { color: #6ee787; border-color: #2ba640; }
+  .b-gold { color: #ffd666; border-color: #9e7400; }
+  .b-blue { color: var(--accent); border-color: #215b8c; }
+
+  .wl-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .wl-tag {
+    display: inline-flex; align-items: center; gap: 5px; background: var(--bg3);
+    border: 1px solid var(--border); padding: 4px 8px; border-radius: 99px; font-size: 11.5px;
+  }
+  .wl-tag button { background: none; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 13px; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .stat-box { background: var(--bg3); padding: 8px; border-radius: 8px; text-align: center; }
+  .stat-val { font-weight: 700; font-size: 15px; }
+  .stat-lbl { font-size: 10.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <span class="brand-badge">STUDIO</span>
+      <span>Capital Studio</span>
+    </div>
+    <div class="quota-pill" id="quota-pill">YT Quota: 0 / 10k</div>
+  </header>
+
+  <main>
+    <!-- TAB 1: HYDROGEN AI COACH CHAT -->
+    <section id="tab-chat" class="tab-pane active">
+      <div class="chat-topbar">
+        <select id="thread-select" class="thread-select"></select>
+        <button class="btn btn-sm" id="btn-new-thread">+ Chat</button>
+        <button class="btn btn-sm" id="btn-del-thread">Del</button>
+      </div>
+      <div class="chip-bar">
+        <button class="chip" data-prompt="Scan my entire watchlist for 100K+ Shorts from the last 90 days and tell me the top 3 non-slop ideas we can bend for Capital Glazer in flat 2D.">Scan Watchlist</button>
+        <button class="chip" data-prompt="Search YouTube Shorts from the last 90 days for 'bank loophole' and 'money scam' (100K+ views) to find tiny channels blowing up.">Hunt New Channels</button>
+        <button class="chip" data-prompt="Look at our cached outliers and compare what hook structure is beating 10x median right now.">Analyze Winners</button>
+        <button class="chip" data-prompt="Look at the screenshots I'm attaching and break down the best performing titles/topics for Capital Glazer.">Audit Screenshots</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="pending-imgs" id="pending-imgs"></div>
+      <div class="chat-input-bar">
+        <input type="file" id="img-input" accept="image/*" multiple hidden />
+        <button class="btn" id="btn-attach" title="Attach images">📷</button>
+        <textarea id="chat-input" rows="1" placeholder="Ask Hydrogen (attach screenshots or tell it to scan)..."></textarea>
+        <button class="btn btn-primary" id="btn-send">Send</button>
+      </div>
+    </section>
+
+    <!-- TAB 2: OUTLIERS SCANNER -->
+    <section id="tab-outliers" class="tab-pane">
+      <div class="card">
+        <div class="row space-between">
+          <strong>Watchlist & Scanner</strong>
+          <button class="btn btn-primary btn-sm" id="btn-scan-wl">Scan Watchlist</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <input type="text" id="new-handle" placeholder="Add @handle (e.g. @celyxi)" style="flex:1;" />
+          <button class="btn btn-sm" id="btn-add-handle">Add</button>
+        </div>
+        <div class="wl-tags" id="wl-tags"></div>
+      </div>
+
+      <div class="card">
+        <strong>Global Keyword Search (100 YT units)</strong>
+        <div class="row" style="margin-top:6px;">
+          <input type="text" id="kw-input" placeholder="e.g. rigged, fake bank, loophole" style="flex:1;" />
+          <button class="btn btn-primary btn-sm" id="btn-kw-search">Search</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div style="flex:1;"><label>Days</label><input type="number" id="f-days" value="90" /></div>
+          <div style="flex:1;"><label>Min Views</label><input type="number" id="f-minviews" value="100000" step="50000" /></div>
+          <div style="flex:1;"><label>Sort By</label>
+            <select id="f-sort">
+              <option value="outlier">OutlierX</option>
+              <option value="vph">VPH</option>
+              <option value="views">Views</option>
+              <option value="vsub">Views/Sub</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="outliers-status" class="muted" style="margin-bottom:8px;"></div>
+      <div id="outliers-list"></div>
+    </section>
+
+    <!-- TAB 3: STUDIO (IDEA BANK + 215 WPM SCRIPT CHECKER) -->
+    <section id="tab-studio" class="tab-pane">
+      <div class="card">
+        <strong>215-WPM Shorts Script Checker</strong>
+        <p class="muted" style="margin:4px 0 8px;">Paste your draft to check Frame-1 hook speed (&lt;5s), pacing, and "subscribe" leaks.</p>
+        <textarea id="script-box" class="box" rows="6" placeholder="Paste your Capital Glazer Short script here..."></textarea>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="stat-val" id="sc-words">0</div><div class="stat-lbl">Words</div></div>
+          <div class="stat-box"><div class="stat-val" id="sc-secs">0s</div><div class="stat-lbl">Est. Runtime</div></div>
+          <div class="stat-box"><div class="stat-val" id="sc-hook">0w</div><div class="stat-lbl">Sentence #1</div></div>
+        </div>
+        <div id="sc-flags" class="muted" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="row space-between" style="margin:10px 2px;">
+        <strong>Saved Idea Bank</strong>
+        <button class="btn btn-sm" id="btn-add-manual-idea">+ Manual Idea</button>
+      </div>
+      <div id="ideas-list"></div>
+    </section>
+
+    <!-- TAB 4: SETTINGS -->
+    <section id="tab-settings" class="tab-pane">
+      <div class="card">
+        <strong>API Keys (Stored Only on This Phone)</strong>
+        <label>YouTube Data API v3 Key</label>
+        <input type="password" id="cfg-yt" placeholder="AIza..." />
+        <label>Gemini API Key (Free from aistudio.google.com)</label>
+        <input type="password" id="cfg-gem" placeholder="AIza..." />
+        <label>Gemini Model</label>
+        <input type="text" id="cfg-model" value="gemini-4-hydrogen" />
+        <label>Channel Strategy Rules (System Prompt)</label>
+        <textarea id="cfg-sys" class="box" rows="6"></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn btn-primary" id="btn-save-cfg">Save Settings</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>Backup & Data</strong>
+        <p class="muted">Export everything (chats, watchlist, outliers, ideas) before clearing browser data.</p>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn" id="btn-export">Export JSON</button>
+          <input type="file" id="import-file" accept=".json" hidden />
+          <button class="btn" id="btn-import">Import JSON</button>
+          <button class="btn btn-red" id="btn-clear-cache">Clear Cached Outliers</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav>
+    <button class="nav-btn active" data-tab="chat"><span class="nav-icon">💬</span><span>Hydrogen</span></button>
+    <button class="nav-btn" data-tab="outliers"><span class="nav-icon">🔥</span><span>Outliers</span></button>
+    <button class="nav-btn" data-tab="studio"><span class="nav-icon">🎬</span><span>Studio</span></button>
+    <button class="nav-btn" data-tab="settings"><span class="nav-icon">⚙️</span><span>Settings</span></button>
+  </nav>
+</div>
+
+<script>
+(() => {
+  const STORE_KEY = "capital_studio_v1";
+  const DEFAULT_WATCHLIST = [
+    "@RicksClips3000", "@celyxi", "@wobblytale", "@wobblybusiness",
+    "@oddwright", "@segmentzero", "@lostclips6868", "@thebuildup3d", "@capitalglazer"
+  ];
+  const DEFAULT_SYS = `You are the AI strategist & scanner brain inside Capital Studio for the YouTube Shorts channel "Capital Glazer".
+CHANNEL RULES:
+- Niche: Money, markets, scams, grey-market systems, corporate power, financial history & loopholes.
+- Visual constraint: FLAT VECTOR 2D animation ONLY (no 3D lighting, no CGI gore/physics spectacle).
+- Zero-Slop Rule: Reject generic beginner finance topics ("How McDonald's makes money", "How gyms make money", dry textbook definitions).
+- Topic Standard: Only recommend topics backed by verified 100K+ Shorts data (last 90 days) or direct cross-niche story bends of proven winners.
+- Narrative Formula: Frame-1 concrete physical action (<18 words / <5s), ~215 WPM tight pacing, counterintuitive twist at 2/3rds, hard stop on final punchline (ZERO "subscribe" CTA).
+- You have live YouTube scanner tools (scan_channels, search_outliers, inspect_video, manage_watchlist, save_idea). Use them whenever live YouTube data is needed—never invent view counts.`;
+
+  const todayStr = () => new Date().toISOString().slice(0, 10);
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return {
+      ytKey: "",
+      gemKey: "",
+      model: "gemini-4-hydrogen",
+      sysPrompt: DEFAULT_SYS,
+      watchlist: [...DEFAULT_WATCHLIST],
+      outliers: [],
+      ideas: [],
+      quota: { date: todayStr(), units: 0 },
+      threads: [{
+        id: "t_" + Date.now(),
+        title: "Main Strategy",
+        apiHistory: [],
+        uiMessages: [{ role: "model", text: "Capital Studio ready. Add your YouTube & Gemini keys in **Settings**, then ask me to scan your watchlist or attach screenshots." }]
+      }],
+      activeThreadId: null
+    };
+  }
+
+  let state = loadState();
+  if (!state.activeThreadId || !state.threads.find(t => t.id === state.activeThreadId)) {
+    state.activeThreadId = state.threads[0].id;
+  }
+  if (state.quota.date !== todayStr()) state.quota = { date: todayStr(), units: 0 };
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    } catch (e) {
+      // If images bloat localStorage, strip oldest inlineData from apiHistory
+      state.threads.forEach(t => {
+        t.apiHistory = t.apiHistory.slice(-16).map(m => ({
+          ...m,
+          parts: (m.parts || []).map(p => p.inlineData ? { text: "[previous image]" } : p)
+        }));
+      });
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {}
+    }
+    updateQuotaPill();
+  }
+
+  function addQuota(u) {
+    if (state.quota.date !== todayStr()) state.quota = { date: todayStr(), units: 0 };
+    state.quota.units += u;
+    saveState();
+  }
+
+  function updateQuotaPill() {
+    document.getElementById("quota-pill").textContent = `YT Quota: ${state.quota.units.toLocaleString()} / 10k`;
+  }
+
+  // ---------- NAVIGATION ----------
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ---------- YOUTUBE SCANNER ENGINE ----------
+  const YT_BASE = "https://www.googleapis.com/youtube/v3";
+
+  function parseDuration(iso) {
+    const m = (iso || "").match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+    if (!m) return 9999;
+    return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0);
+  }
+
+  function extractVideoId(input) {
+    const s = (input || "").trim();
+    const m = s.match(/(?:shorts\/|youtu\.be\/|v=)([A-Za-z0-9_-]{11})/) || s.match(/^([A-Za-z0-9_-]{11})$/);
+    return m ? m[1] : null;
+  }
+
+  async function ytGet(endpoint, params, quotaCost = 1) {
+    if (!state.ytKey) throw new Error("YouTube API key missing. Add it in Settings.");
+    const url = new URL(`${YT_BASE}/${endpoint}`);
+    Object.entries({ ...params, key: state.ytKey }).forEach(([k, v]) => url.searchParams.set(k, v));
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    addQuota(quotaCost);
+    if (data.error) throw new Error(`YouTube API (${endpoint}): ${data.error.message}`);
+    return data;
+  }
+
+  function median(nums) {
+    if (!nums.length) return 1;
+    const s = [...nums].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return (s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2) || 1;
+  }
+
+  async function scanChannelsTool(handles, daysBack = 90, minViews = 100000, maxSec = 180) {
+    const list = (handles && handles.length) ? handles : state.watchlist;
+    const cutoffMs = Date.now() - daysBack * 86400000;
+    const nowMs = Date.now();
+    const newOutliers = [];
+    const summary = [];
+
+    for (const rawH of list) {
+      const clean = rawH.trim().startsWith("@") ? rawH.trim() : "@" + rawH.trim();
+      const chRes = await ytGet("channels", { part: "snippet,contentDetails,statistics", forHandle: clean }, 1);
+      const ch = chRes.items && chRes.items[0];
+      if (!ch) { summary.push(`${clean}: not found`); continue; }
+
+      const subs = parseInt(ch.statistics.subscriberCount || 0);
+      const uploadsId = ch.contentDetails.relatedPlaylists.uploads;
+      let ids = [], pageToken = null, stop = false;
+
+      while (ids.length < 100 && !stop) {
+        const plParams = { part: "contentDetails", playlistId: uploadsId, maxResults: 50 };
+        if (pageToken) plParams.pageToken = pageToken;
+        const pl = await ytGet("playlistItems", plParams, 1);
+        const items = pl.items || [];
+        if (!items.length) break;
+        for (const it of items) {
+          const pub = it.contentDetails.videoPublishedAt;
+          if (pub && new Date(pub).getTime() < cutoffMs) { stop = true; break; }
+          ids.push(it.contentDetails.videoId);
+        }
+        pageToken = pl.nextPageToken;
+        if (!pageToken) break;
+      }
+
+      const shorts = [];
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const vRes = await ytGet("videos", { part: "snippet,contentDetails,statistics", id: batch.join(",") }, 1);
+        for (const v of (vRes.items || [])) {
+          const dur = parseDuration(v.contentDetails.duration);
+          if (dur > maxSec) continue;
+          const views = parseInt(v.statistics.viewCount || 0);
+          const likes = parseInt(v.statistics.likeCount || 0);
+          const pubMs = new Date(v.snippet.publishedAt).getTime();
+          const hrs = Math.max((nowMs - pubMs) / 3600000, 1);
+          shorts.push({
+            id: v.id,
+            source: clean,
+            channelId: ch.id,
+            subs,
+            title: v.snippet.title.replace(/\s+/g, " "),
+            published: v.snippet.publishedAt.slice(0, 10),
+            dur,
+            views,
+            likes,
+            likeRate: views ? +((likes / views) * 100).toFixed(2) : 0,
+            vph: Math.round(views / hrs),
+            vSub: +(views / Math.max(subs, 1)).toFixed(1),
+            thumb: v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.default?.url || "",
+            url: `https://youtube.com/shorts/${v.id}`
+          });
+        }
+      }
+
+      const med = median(shorts.map(s => s.views));
+      let hitCount = 0;
+      for (const s of shorts) {
+        if (s.views >= minViews) {
+          s.median = Math.round(med);
+          s.outlierX = +(s.views / med).toFixed(1);
+          newOutliers.push(s);
+          hitCount++;
+        }
+      }
+      summary.push(`${clean} (${subs.toLocaleString()} subs, med ${Math.round(med).toLocaleString()}): ${hitCount} hits >= ${minViews.toLocaleString()}`);
+    }
+
+    mergeOutliers(newOutliers);
+    renderOutliers();
+    return { summary, count: newOutliers.length, topHits: newOutliers.sort((a,b) => b.outlierX - a.outlierX).slice(0, 35) };
+  }
+
+  async function searchOutliersTool(keyword, daysBack = 90, minViews = 100000) {
+    const cutoffIso = new Date(Date.now() - daysBack * 86400000).toISOString();
+    const sRes = await ytGet("search", {
+      part: "id", q: keyword, type: "video", videoDuration: "short",
+      order: "viewCount", publishedAfter: cutoffIso, maxResults: 25
+    }, 100);
+
+    const ids = (sRes.items || []).map(x => x.id.videoId).filter(Boolean);
+    if (!ids.length) return { keyword, count: 0, hits: [] };
+
+    const vRes = await ytGet("videos", { part: "snippet,contentDetails,statistics", id: ids.join(",") }, 1);
+    const rawItems = (vRes.items || []).filter(v => {
+      const dur = parseDuration(v.contentDetails.duration);
+      const views = parseInt(v.statistics.viewCount || 0);
+      return dur <= 180 && views >= minViews;
+    });
+
+    const chIds = [...new Set(rawItems.map(v => v.snippet.channelId))];
+    const subMap = {};
+    if (chIds.length) {
+      const cRes = await ytGet("channels", { part: "statistics,snippet", id: chIds.slice(0, 50).join(",") }, 1);
+      for (const c of (cRes.items || [])) {
+        subMap[c.id] = {
+          subs: parseInt(c.statistics.subscriberCount || 0),
+          handle: c.snippet.customUrl || c.snippet.title
+        };
+      }
+    }
+
+    const nowMs = Date.now();
+    const hits = rawItems.map(v => {
+      const views = parseInt(v.statistics.viewCount || 0);
+      const likes = parseInt(v.statistics.likeCount || 0);
+      const pubMs = new Date(v.snippet.publishedAt).getTime();
+      const hrs = Math.max((nowMs - pubMs) / 3600000, 1);
+      const chInfo = subMap[v.snippet.channelId] || { subs: 0, handle: v.snippet.channelTitle };
+      return {
+        id: v.id,
+        source: chInfo.handle.startsWith("@") ? chInfo.handle : `${chInfo.handle} (KW:${keyword})`,
+        channelId: v.snippet.channelId,
+        subs: chInfo.subs,
+        title: v.snippet.title.replace(/\s+/g, " "),
+        published: v.snippet.publishedAt.slice(0, 10),
+        dur: parseDuration(v.contentDetails.duration),
+        views,
+        likes,
+        likeRate: views ? +((likes / views) * 100).toFixed(2) : 0,
+        vph: Math.round(views / hrs),
+        vSub: +(views / Math.max(chInfo.subs, 1)).toFixed(1),
+        outlierX: 0,
+        median: 0,
+        thumb: v.snippet.thumbnails?.high?.url || "",
+        url: `https://youtube.com/shorts/${v.id}`
+      };
+    });
+
+    mergeOutliers(hits);
+    renderOutliers();
+    return { keyword, count: hits.length, hits: hits.sort((a,b) => b.vSub - a.vSub) };
+  }
+
+  async function inspectVideoTool(videoUrlOrId) {
+    const vid = extractVideoId(videoUrlOrId);
+    if (!vid) return { error: "Could not parse a valid 11-character YouTube video ID." };
+    const vRes = await ytGet("videos", { part: "snippet,contentDetails,statistics", id: vid }, 1);
+    const v = vRes.items && vRes.items[0];
+    if (!v) return { error: "Video not found." };
+
+    let comments = [];
+    try {
+      const cRes = await ytGet("commentThreads", { part: "snippet", videoId: vid, order: "relevance", maxResults: 12 }, 1);
+      comments = (cRes.items || []).map(c => c.snippet.topLevelComment.snippet.textDisplay.replace(/<[^>]+>/g, " "));
+    } catch (e) {
+      comments = ["Comments unavailable or disabled."];
+    }
+
+    const views = parseInt(v.statistics.viewCount || 0);
+    const likes = parseInt(v.statistics.likeCount || 0);
+    return {
+      id: vid,
+      channel: v.snippet.channelTitle,
+      title: v.snippet.title,
+      published: v.snippet.publishedAt.slice(0, 10),
+      durationSeconds: parseDuration(v.contentDetails.duration),
+      views,
+      likes,
+      likeRatePercent: views ? +((likes / views) * 100).toFixed(2) : 0,
+      commentCount: parseInt(v.statistics.commentCount || 0),
+      description: (v.snippet.description || "").slice(0, 600),
+      topComments: comments
+    };
+  }
+
+  function mergeOutliers(items) {
+    const map = new Map(state.outliers.map(x => [x.id, x]));
+    items.forEach(it => map.set(it.id, it));
+    state.outliers = Array.from(map.values()).slice(0, 300);
+    saveState();
+  }
+
+  // ---------- GEMINI 4 HYDROGEN + TOOL LOOP ----------
+  const GEMINI_TOOLS = [{
+    functionDeclarations: [
+      {
+        name: "scan_channels",
+        description: "Scan YouTube channels for Shorts published in the last N days with >= minViews. Calculates median, OutlierX, VPH, and Views/Subs.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            handles: { type: "ARRAY", items: { type: "STRING" }, description: "Channel handles like @celyxi. Omit to scan full saved watchlist." },
+            days_back: { type: "INTEGER", description: "Default 90" },
+            min_views: { type: "INTEGER", description: "Default 100000" }
+          }
+        }
+      },
+      {
+        name: "search_outliers",
+        description: "Search all of YouTube for Shorts matching a keyword in the last N days sorted by views, plus creator subscriber counts.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            keyword: { type: "STRING", description: "Search phrase e.g. 'bank loophole', 'rigged race'" },
+            days_back: { type: "INTEGER", description: "Default 90" },
+            min_views: { type: "INTEGER", description: "Default 100000" }
+          },
+          required: ["keyword"]
+        }
+      },
+      {
+        name: "inspect_video",
+        description: "Fetch detailed metrics, description, and top viewer comments for a specific YouTube Short URL or ID.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            video_url_or_id: { type: "STRING" }
+          },
+          required: ["video_url_or_id"]
+        }
+      },
+      {
+        name: "get_cached_outliers",
+        description: "Read already-scanned outliers stored locally on the phone (costs 0 YouTube quota).",
+        parameters: { type: "OBJECT", properties: {} }
+      },
+      {
+        name: "save_idea",
+        description: "Save a promising outlier or bent Capital Glazer concept into the Studio Idea Bank.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            title: { type: "STRING" },
+            source_ref: { type: "STRING" },
+            notes: { type: "STRING" }
+          },
+          required: ["title", "notes"]
+        }
+      },
+      {
+        name: "manage_watchlist",
+        description: "View or add a channel @handle to the saved Watchlist.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            action: { type: "STRING", enum: ["list", "add"] },
+            handle: { type: "STRING" }
+          },
+          required: ["action"]
+        }
+      }
+    ]
+  }];
+
+  async function executeTool(name, args = {}) {
+    if (name === "scan_channels") return await scanChannelsTool(args.handles, args.days_back || 90, args.min_views || 100000);
+    if (name === "search_outliers") return await searchOutliersTool(args.keyword, args.days_back || 90, args.min_views || 100000);
+    if (name === "inspect_video") return await inspectVideoTool(args.video_url_or_id);
+    if (name === "get_cached_outliers") {
+      return {
+        totalCached: state.outliers.length,
+        top40: [...state.outliers].sort((a,b) => (b.outlierX || b.vSub) - (a.outlierX || a.vSub)).slice(0, 40)
+      };
+    }
+    if (name === "save_idea") {
+      state.ideas.unshift({
+        id: "id_" + Date.now(),
+        title: args.title,
+        ref: args.source_ref || "",
+        notes: args.notes,
+        status: "To Research",
+        date: todayStr()
+      });
+      saveState();
+      renderIdeas();
+      return { saved: true, totalIdeas: state.ideas.length };
+    }
+    if (name === "manage_watchlist") {
+      if (args.action === "add" && args.handle) {
+        const h = args.handle.startsWith("@") ? args.handle : "@" + args.handle;
+        if (!state.watchlist.includes(h)) { state.watchlist.push(h); saveState(); renderWatchlist(); }
+      }
+      return { watchlist: state.watchlist };
+    }
+    return { error: `Unknown tool: ${name}` };
+  }
+
+  async function callGemini(apiHistory) {
+    const model = (state.model || "gemini-4-hydrogen").trim();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const body = {
+      systemInstruction: {
+        parts: [{ text: `${state.sysPrompt}\n\nCurrent saved watchlist: ${state.watchlist.join(", ")}\nCached outliers count: ${state.outliers.length}` }]
+      },
+      contents: apiHistory,
+      tools: GEMINI_TOOLS
+    };
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": state.gemKey },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(`Gemini API: ${data.error.message}`);
+    const cand = data.candidates && data.candidates[0];
+    if (!cand || !cand.content) throw new Error("Empty response from Gemini.");
+    return cand.content;
+  }
+
+  // ---------- CHAT UI + IMAGE COMPRESSION ----------
+  let pendingImages = [];
+
+  function compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const maxDim = 1280;
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            const scale = Math.min(maxDim / w, maxDim / h);
+            w = Math.round(w * scale);
+            h = Math.round(h * scale);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          resolve({
+            dataUrl,
+            mimeType: "image/jpeg",
+            base64: dataUrl.split(",")[1]
+          });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById("btn-attach").onclick = () => document.getElementById("img-input").click();
+  document.getElementById("img-input").onchange = async (e) => {
+    for (const f of e.target.files) {
+      pendingImages.push(await compressImage(f));
+    }
+    e.target.value = "";
+    renderPendingImgs();
+  };
+
+  function renderPendingImgs() {
+    const el = document.getElementById("pending-imgs");
+    el.innerHTML = "";
+    pendingImages.forEach((img, idx) => {
+      const wrap = document.createElement("div");
+      wrap.className = "pending-thumb";
+      wrap.innerHTML = `<img src="${img.dataUrl}" /><button title="Remove">×</button>`;
+      wrap.querySelector("button").onclick = () => { pendingImages.splice(idx, 1); renderPendingImgs(); };
+      el.appendChild(wrap);
+    });
+  }
+
+  function escapeHtml(s) {
+    return (s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function formatMd(text) {
+    let h = escapeHtml(text);
+    h = h.replace(/`([^`]+)`/g, "<code>$1</code>");
+    h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    h = h.replace(/^### (.+)$/gm, "<h3>$1</h3>");
+    h = h.replace(/^## (.+)$/gm, "<h2>$1</h2>");
+    h = h.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    h = h.replace(/\n/g, "<br>");
+    return h;
+  }
+
+  function getActiveThread() {
+    return state.threads.find(t => t.id === state.activeThreadId) || state.threads[0];
+  }
+
+  function renderThreads() {
+    const sel = document.getElementById("thread-select");
+    sel.innerHTML = state.threads.map(t => `<option value="${t.id}" ${t.id === state.activeThreadId ? "selected" : ""}>${escapeHtml(t.title)}</option>`).join("");
+  }
+
+  function renderChat() {
+    renderThreads();
+    const t = getActiveThread();
+    const box = document.getElementById("chat-messages");
+    box.innerHTML = "";
+    t.uiMessages.forEach(m => {
+      const div = document.createElement("div");
+      div.className = `msg ${m.role}`;
+      let html = "";
+      if (m.images && m.images.length) {
+        html += `<div class="msg-imgs">${m.images.map(src => `<img src="${src}" />`).join("")}</div>`;
+      }
+      html += m.role === "tool-log" ? escapeHtml(m.text) : formatMd(m.text);
+      div.innerHTML = html;
+      box.appendChild(div);
+    });
+    box.scrollTop = box.scrollHeight;
+  }
+
+  document.getElementById("thread-select").onchange = (e) => {
+    state.activeThreadId = e.target.value;
+    saveState();
+    renderChat();
+  };
+  document.getElementById("btn-new-thread").onclick = () => {
+    const name = prompt("Chat title:", `Session ${state.threads.length + 1}`);
+    if (!name) return;
+    const id = "t_" + Date.now();
+    state.threads.unshift({ id, title: name, apiHistory: [], uiMessages: [] });
+    state.activeThreadId = id;
+    saveState();
+    renderChat();
+  };
+  document.getElementById("btn-del-thread").onclick = () => {
+    if (state.threads.length <= 1) return alert("Keep at least one chat.");
+    state.threads = state.threads.filter(t => t.id !== state.activeThreadId);
+    state.activeThreadId = state.threads[0].id;
+    saveState();
+    renderChat();
+  };
+
+  async function sendChat(customText) {
+    const inputEl = document.getElementById("chat-input");
+    const text = (customText ?? inputEl.value).trim();
+    if (!text && !pendingImages.length) return;
+    if (!state.gemKey) return alert("Add your free Gemini API key in Settings first.");
+
+    const t = getActiveThread();
+    const imgs = [...pendingImages];
+    if (!customText) inputEl.value = "";
+    pendingImages = [];
+    renderPendingImgs();
+
+    const userParts = [];
+    imgs.forEach(im => userParts.push({ inlineData: { mimeType: im.mimeType, data: im.base64 } }));
+    if (text) userParts.push({ text });
+
+    t.uiMessages.push({ role: "user", text: text || "[Image]", images: imgs.map(i => i.dataUrl) });
+    t.apiHistory.push({ role: "user", parts: userParts });
+    saveState();
+    renderChat();
+
+    const sendBtn = document.getElementById("btn-send");
+    sendBtn.disabled = true;
+
+    try {
+      for (let hop = 0; hop < 6; hop++) {
+        const modelContent = await callGemini(t.apiHistory);
+        // CRITICAL: preserve verbatim modelContent (including thoughtSignature!) in apiHistory
+        t.apiHistory.push(modelContent);
+
+        const parts = modelContent.parts || [];
+        const fnParts = parts.filter(p => p.functionCall);
+        const replyText = parts.filter(p => p.text && !p.thought).map(p => p.text).join("\n").trim();
+
+        if (fnParts.length) {
+          const fnResponses = [];
+          for (const fp of fnParts) {
+            const fc = fp.functionCall;
+            t.uiMessages.push({ role: "tool-log", text: `⚙ Running ${fc.name}(${JSON.stringify(fc.args || {})})...` });
+            renderChat();
+            let result;
+            try { result = await executeTool(fc.name, fc.args || {}); }
+            catch (err) { result = { error: err.message }; }
+            fnResponses.push({
+              functionResponse: {
+                ...(fc.id ? { id: fc.id } : {}),
+                name: fc.name,
+                response: { result }
+              }
+            });
+          }
+          t.apiHistory.push({ role: "user", parts: fnResponses });
+          saveState();
+        } else {
+          t.uiMessages.push({ role: "model", text: replyText || "(No text returned)" });
+          saveState();
+          renderChat();
+          break;
+        }
+      }
+    } catch (err) {
+      t.uiMessages.push({ role: "tool-log", text: `❌ ${err.message}` });
+      saveState();
+      renderChat();
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  document.getElementById("btn-send").onclick = () => sendChat();
+  document.querySelectorAll(".chip").forEach(c => {
+    c.onclick = () => sendChat(c.dataset.prompt);
+  });
+
+  // ---------- OUTLIERS TAB UI ----------
+  function renderWatchlist() {
+    const el = document.getElementById("wl-tags");
+    el.innerHTML = "";
+    state.watchlist.forEach((h, i) => {
+      const tag = document.createElement("span");
+      tag.className = "wl-tag";
+      tag.innerHTML = `${escapeHtml(h)} <button title="Remove">×</button>`;
+      tag.querySelector("button").onclick = () => { state.watchlist.splice(i, 1); saveState(); renderWatchlist(); };
+      el.appendChild(tag);
+    });
+  }
+
+  document.getElementById("btn-add-handle").onclick = () => {
+    const inp = document.getElementById("new-handle");
+    let v = inp.value.trim();
+    if (!v) return;
+    if (!v.startsWith("@")) v = "@" + v;
+    if (!state.watchlist.includes(v)) { state.watchlist.push(v); saveState(); renderWatchlist(); }
+    inp.value = "";
+  };
+
+  document.getElementById("btn-scan-wl").onclick = async () => {
+    const st = document.getElementById("outliers-status");
+    const btn = document.getElementById("btn-scan-wl");
+    btn.disabled = true;
+    st.textContent = "Scanning watchlist...";
+    try {
+      const days = parseInt(document.getElementById("f-days").value) || 90;
+      const minV = parseInt(document.getElementById("f-minviews").value) || 100000;
+      const res = await scanChannelsTool(state.watchlist, days, minV);
+      st.textContent = `Done: ${res.count} hits cached. ${res.summary.join(" | ")}`;
+    } catch (e) { st.textContent = "Error: " + e.message; }
+    finally { btn.disabled = false; }
+  };
+
+  document.getElementById("btn-kw-search").onclick = async () => {
+    const kw = document.getElementById("kw-input").value.trim();
+    if (!kw) return;
+    const st = document.getElementById("outliers-status");
+    st.textContent = `Searching "${kw}"...`;
+    try {
+      const days = parseInt(document.getElementById("f-days").value) || 90;
+      const minV = parseInt(document.getElementById("f-minviews").value) || 100000;
+      const res = await searchOutliersTool(kw, days, minV);
+      st.textContent = `Keyword "${kw}": found ${res.count} hits >= ${minV.toLocaleString()}.`;
+    } catch (e) { st.textContent = "Error: " + e.message; }
+  };
+
+  document.getElementById("f-sort").onchange = renderOutliers;
+
+  function renderOutliers() {
+    const sortBy = document.getElementById("f-sort").value;
+    const list = [...state.outliers].sort((a, b) => {
+      if (sortBy === "vph") return b.vph - a.vph;
+      if (sortBy === "views") return b.views - a.views;
+      if (sortBy === "vsub") return b.vSub - a.vSub;
+      return (b.outlierX || b.vSub) - (a.outlierX || a.vSub);
+    });
+    const el = document.getElementById("outliers-list");
+    if (!list.length) { el.innerHTML = `<div class="muted">No outliers cached yet. Tap "Scan Watchlist" above.</div>`; return; }
+    el.innerHTML = "";
+    list.slice(0, 80).forEach(r => {
+      const card = document.createElement("div");
+      card.className = "outlier-card";
+      card.innerHTML = `
+        <img class="outlier-thumb" src="${escapeHtml(r.thumb)}" loading="lazy" />
+        <div class="outlier-body">
+          <div class="outlier-title"><a href="${escapeHtml(r.url)}" target="_blank" style="color:var(--text);text-decoration:none;">${escapeHtml(r.title)}</a></div>
+          <div class="muted">${escapeHtml(r.source)} • ${r.subs ? r.subs.toLocaleString() + " subs" : ""} • ${r.published} • ${r.dur}s</div>
+          <div class="badges">
+            <span class="badge b-green">${r.views.toLocaleString()} views</span>
+            ${r.outlierX ? `<span class="badge b-gold">${r.outlierX}x med</span>` : ""}
+            <span class="badge b-blue">${r.vph.toLocaleString()} VPH</span>
+            <span class="badge">${r.vSub}x subs</span>
+            <span class="badge">${r.likeRate}% likes</span>
+          </div>
+          <div class="row">
+            <button class="btn btn-sm btn-ask">Ask Hydrogen</button>
+            <button class="btn btn-sm btn-save">+ Idea Bank</button>
+          </div>
+        </div>`;
+      card.querySelector(".btn-ask").onclick = () => {
+        document.querySelector('[data-tab="chat"]').click();
+        sendChat(`Inspect and bend this verified outlier for Capital Glazer (flat 2D only): "${r.title}" (${r.views.toLocaleString()} views, ${r.outlierX}x median, ${r.vSub}x subs) — ${r.url}`);
+      };
+      card.querySelector(".btn-save").onclick = () => {
+        state.ideas.unshift({ id: "id_" + Date.now(), title: r.title, ref: r.url, notes: `${r.source} | ${r.views.toLocaleString()} views | ${r.outlierX}x`, status: "To Research", date: todayStr() });
+        saveState();
+        renderIdeas();
+        alert("Saved to Studio Idea Bank.");
+      };
+      el.appendChild(card);
+    });
+  }
+
+  // ---------- STUDIO TAB (SCRIPT CHECKER + IDEA BANK) ----------
+  const scriptBox = document.getElementById("script-box");
+  scriptBox.addEventListener("input", () => {
+    const txt = scriptBox.value.trim();
+    const words = txt ? txt.split(/\s+/).length : 0;
+    const secs = Math.round((words / 215) * 60);
+    const firstSentence = (txt.split(/[.!?]\s|\n/)[0] || "").trim();
+    const hookWords = firstSentence ? firstSentence.split(/\s+/).length : 0;
+    document.getElementById("sc-words").textContent = words;
+    document.getElementById("sc-secs").textContent = secs + "s";
+    document.getElementById("sc-hook").textContent = hookWords + "w";
+
+    const flags = [];
+    if (hookWords > 18) flags.push("⚠ Sentence #1 is over 18 words (>5s hook). Tighten it.");
+    else if (hookWords > 0) flags.push("✅ Hook length under 5s.");
+    if (secs > 52) flags.push("⚠ Over 52s—watch for post-twist bloat.");
+    if (/subscribe|follow/i.test(txt.slice(-120))) flags.push("🚫 'Subscribe/Follow' detected near the end—cut it to save completion rate.");
+    document.getElementById("sc-flags").textContent = flags.join("  ");
+  });
+
+  function renderIdeas() {
+    const el = document.getElementById("ideas-list");
+    if (!state.ideas.length) { el.innerHTML = `<div class="muted">No saved ideas yet.</div>`; return; }
+    el.innerHTML = "";
+    state.ideas.forEach((it, idx) => {
+      const c = document.createElement("div");
+      c.className = "card";
+      c.innerHTML = `
+        <div class="row space-between">
+          <strong>${escapeHtml(it.title)}</strong>
+          <select class="st-sel" style="width:auto;padding:3px 6px;font-size:11px;">
+            ${["To Research", "Scripted", "Posted"].map(s => `<option ${it.status === s ? "selected" : ""}>${s}</option>`).join("")}
+          </select>
+        </div>
+        <div class="muted" style="margin:5px 0;">${escapeHtml(it.notes)}</div>
+        <div class="row">
+          ${it.ref ? `<a href="${escapeHtml(it.ref)}" target="_blank" class="btn btn-sm" style="text-decoration:none;">Open Ref</a>` : ""}
+          <button class="btn btn-sm btn-del-idea">Delete</button>
+        </div>`;
+      c.querySelector(".st-sel").onchange = (e) => { it.status = e.target.value; saveState(); };
+      c.querySelector(".btn-del-idea").onclick = () => { state.ideas.splice(idx, 1); saveState(); renderIdeas(); };
+      el.appendChild(c);
+    });
+  }
+
+  document.getElementById("btn-add-manual-idea").onclick = () => {
+    const title = prompt("Idea / Working Title:");
+    if (!title) return;
+    const notes = prompt("Notes / Angle:") || "";
+    state.ideas.unshift({ id: "id_" + Date.now(), title, ref: "", notes, status: "To Research", date: todayStr() });
+    saveState();
+    renderIdeas();
+  };
+
+  // ---------- SETTINGS & BACKUP ----------
+  function loadSettingsUI() {
+    document.getElementById("cfg-yt").value = state.ytKey || "";
+    document.getElementById("cfg-gem").value = state.gemKey || "";
+    document.getElementById("cfg-model").value = state.model || "gemini-4-hydrogen";
+    document.getElementById("cfg-sys").value = state.sysPrompt || DEFAULT_SYS;
+  }
+
+  document.getElementById("btn-save-cfg").onclick = () => {
+    state.ytKey = document.getElementById("cfg-yt").value.trim();
+    state.gemKey = document.getElementById("cfg-gem").value.trim();
+    state.model = document.getElementById("cfg-model").value.trim() || "gemini-4-hydrogen";
+    state.sysPrompt = document.getElementById("cfg-sys").value.trim() || DEFAULT_SYS;
+    saveState();
+    alert("Settings saved locally on your device.");
+  };
+
+  document.getElementById("btn-export").onclick = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `capital-studio-backup-${todayStr()}.json`;
+    a.click();
+  };
+
+  document.getElementById("btn-import").onclick = () => document.getElementById("import-file").click();
+  document.getElementById("import-file").onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      state = JSON.parse(await f.text());
+      saveState();
+      initUI();
+      alert("Backup restored.");
+    } catch (err) { alert("Invalid JSON file."); }
+  };
+
+  document.getElementById("btn-clear-cache").onclick = () => {
+    state.outliers = [];
+    saveState();
+    renderOutliers();
+  };
+
+  function initUI() {
+    updateQuotaPill();
+    renderChat();
+    renderWatchlist();
+    renderOutliers();
+    renderIdeas();
+    loadSettingsUI();
+  }
+  initUI();
+})();
+</script>
+</body>
+</html>
