@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0b0e" />
+<title>Capital Studio</title>
+<style>
+  :root {
+    --bg: #0b0b0e;
+    --bg2: #141419;
+    --bg3: #1e1e26;
+    --border: #2a2a35;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --accent: #3ea6ff;
+    --red: #ff3b5c;
+    --green: #22c55e;
+    --gold: #eab308;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px; overflow: hidden;
+  }
+  .app { display: flex; flex-direction: column; height: 100dvh; }
+
+  /* Header */
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px 14px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+  .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+  .header-right { display: flex; align-items: center; gap: 6px; }
+  .pill-btn {
+    background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 99px; padding: 5px 10px; font-size: 11.5px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .pill-btn.has-err { border-color: var(--red); color: #ff8da1; }
+
+  /* Collapsible Compact Panels (Model Picker & Error Log Drawer) */
+  .drawer {
+    display: none; background: #101015; border-bottom: 1px solid var(--border);
+    padding: 10px 12px; flex-shrink: 0;
+  }
+  .drawer.open { display: block; }
+  .log-box {
+    max-height: 24dvh; overflow-y: auto; background: #070709; border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px; line-height: 1.45; margin-top: 8px;
+  }
+  .log-line { margin-bottom: 4px; word-break: break-word; }
+  .log-ERR { color: #ff6b81; }
+  .log-OK { color: #4ade80; }
+  .log-INFO { color: #7dd3fc; }
+
+  /* Main & Tabs */
+  main { flex: 1; overflow: hidden; position: relative; }
+  .tab-pane { display: none; height: 100%; overflow-y: auto; padding: 14px; }
+  .tab-pane.active { display: block; }
+  #tab-chat.active { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+
+  nav {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0;
+  }
+  .nav-btn {
+    background: none; border: none; color: var(--muted); padding: 10px 4px;
+    font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
+  }
+  .nav-btn.active { color: var(--text); font-weight: 600; }
+  .nav-btn.active .nav-icon { color: var(--accent); }
+  .nav-icon { font-size: 17px; line-height: 1; }
+
+  /* Chat Clean Layout */
+  .chat-subbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .thread-select {
+    flex: 1; background: var(--bg2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; font-size: 12.5px; min-width: 0;
+  }
+  .quick-drawer {
+    display: none; gap: 6px; padding: 8px 12px; background: var(--bg2);
+    border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0;
+  }
+  .quick-drawer.open { display: flex; }
+  .chip {
+    white-space: nowrap; background: var(--bg3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 99px; padding: 6px 12px; font-size: 11.5px; cursor: pointer;
+  }
+
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .msg {
+    max-width: 88%; padding: 11px 13px; border-radius: 14px; line-height: 1.5;
+    word-wrap: break-word; font-size: 13.5px;
+  }
+  .msg.user { align-self: flex-end; background: #1a3b66; border: 1px solid #295691; border-bottom-right-radius: 4px; }
+  .msg.model { align-self: flex-start; background: var(--bg2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .msg.tool-log {
+    align-self: flex-start; background: #111822; border: 1px solid #20344c;
+    color: var(--accent); font-size: 11.5px; padding: 7px 11px; border-radius: 10px;
+  }
+  .msg.err-msg {
+    align-self: flex-start; background: #221016; border: 1px solid #5e1f2e;
+    color: #ff94a6; font-size: 12px; padding: 9px 12px; border-radius: 10px;
+  }
+  .msg-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .msg-imgs img { max-width: 120px; max-height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
+  .msg h2, .msg h3 { font-size: 14px; margin: 8px 0 4px; color: var(--accent); }
+  .msg a { color: var(--accent); }
+  .msg code { background: #09090c; padding: 2px 5px; border-radius: 4px; font-size: 12px; }
+
+  .status-bar {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 7px 12px; background: #111927; border-top: 1px solid #20344d;
+    font-size: 12px; color: var(--accent); flex-shrink: 0;
+  }
+  .status-bar.active { display: flex; }
+
+  .pending-imgs {
+    display: flex; gap: 8px; padding: 8px 12px; background: var(--bg2);
+    border-top: 1px solid var(--border); overflow-x: auto; flex-shrink: 0;
+  }
+  .pending-imgs:empty { display: none; }
+  .pending-thumb { position: relative; }
+  .pending-thumb img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1px solid var(--accent); }
+  .pending-thumb button {
+    position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+    border-radius: 50%; border: none; background: var(--red); color: #fff; font-size: 11px; cursor: pointer;
+  }
+
+  .chat-input-bar {
+    display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px;
+    background: var(--bg2); border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  .chat-input-bar textarea {
+    flex: 1; background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; font-family: inherit; font-size: 14px;
+    resize: none; max-height: 110px; min-height: 40px; outline: none;
+  }
+
+  /* Controls & Cards */
+  .btn {
+    background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary { background: var(--accent); color: #050a12; border-color: var(--accent); }
+  .btn-red { background: var(--red); color: #fff; border-color: var(--red); }
+  .btn-sm { padding: 6px 10px; font-size: 11.5px; border-radius: 8px; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 13px; margin-bottom: 12px;
+  }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .between { justify-content: space-between; }
+  input[type="text"], input[type="password"], input[type="number"], select, textarea.box {
+    width: 100%; background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 11px; font-size: 13px; font-family: inherit; outline: none;
+  }
+  label { display: block; font-size: 11.5px; color: var(--muted); margin: 10px 0 4px; }
+  .muted { color: var(--muted); font-size: 12px; }
+
+  /* Outliers Clean Cards */
+  .outlier-card {
+    display: flex; gap: 12px; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; margin-bottom: 10px;
+  }
+  .outlier-thumb { width: 64px; height: 96px; border-radius: 8px; object-fit: cover; background: #000; flex-shrink: 0; }
+  .outlier-body { flex: 1; min-width: 0; }
+  .outlier-title { font-weight: 600; font-size: 13.5px; line-height: 1.35; margin-bottom: 4px; }
+  .metrics-line { font-size: 12px; color: var(--green); font-weight: 600; margin: 5px 0 8px; }
+  .metrics-line span { color: var(--gold); }
+
+  .wl-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .wl-tag {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--bg3);
+    border: 1px solid var(--border); padding: 4px 10px; border-radius: 99px; font-size: 11.5px;
+  }
+  .wl-tag button { background: none; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 14px; }
+
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--bg2); padding: 4px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px; }
+  .seg button { background: none; border: none; color: var(--muted); padding: 8px; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+  .seg button.active { background: var(--bg3); color: var(--text); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .stat-box { background: var(--bg3); padding: 10px; border-radius: 10px; text-align: center; }
+  .stat-val { font-weight: 700; font-size: 16px; }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <span class="dot-live"></span>
+      <span>Capital Studio</span>
+    </div>
+    <div class="header-right">
+      <button type="button" class="pill-btn" id="btn-toggle-model">⚡ <span id="hdr-model">hydrogen</span> ▾</button>
+      <button type="button" class="pill-btn" id="btn-toggle-logs">Logs <span id="err-badge"></span></button>
+    </div>
+  </header>
+
+  <!-- COMPACT MODEL SELECTOR DRAWER -->
+  <div class="drawer" id="model-drawer">
+    <div class="row between" style="margin-bottom:6px;">
+      <strong style="font-size:12.5px;">AI Model & Thinking Speed</strong>
+      <button type="button" class="btn btn-sm" id="btn-close-model">Done</button>
+    </div>
+    <div class="row">
+      <select id="hdr-model-sel" style="flex:2;">
+        <option value="gemini-4-hydrogen">gemini-4-hydrogen (Default / Free)</option>
+        <option value="gemini-4-argon">gemini-4-argon (Paid Reasoning)</option>
+        <option value="gemini-4-carbon">gemini-4-carbon (Deepest)</option>
+        <option value="gemini-3.8-flash">gemini-3.8-flash (Fallback Fast)</option>
+        <option value="__custom__">Custom Model ID...</option>
+      </select>
+      <select id="hdr-think-sel" style="flex:1;">
+        <option value="low">Think: Low (Fast)</option>
+        <option value="medium" selected>Think: Medium</option>
+        <option value="high">Think: High</option>
+        <option value="xhigh">Think: Max</option>
+      </select>
+    </div>
+    <input type="text" id="hdr-custom-model" placeholder="Enter exact model ID (e.g. gemini-4-hydrogen)" style="display:none;margin-top:8px;" />
+  </div>
+
+  <!-- COLLAPSIBLE COMPACT LOG DRAWER -->
+  <div class="drawer" id="log-drawer">
+    <div class="row between">
+      <strong style="font-size:12.5px;">Console & Error Log</strong>
+      <div class="row">
+        <button type="button" class="btn btn-sm btn-primary" id="btn-test-apis">Test APIs</button>
+        <button type="button" class="btn btn-sm" id="btn-copy-logs">Copy</button>
+        <button type="button" class="btn btn-sm" id="btn-clear-logs">Clear</button>
+        <button type="button" class="btn btn-sm" id="btn-close-logs">×</button>
+      </div>
+    </div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+
+  <main>
+    <!-- TAB 1: HYDROGEN CHAT -->
+    <section id="tab-chat" class="tab-pane active">
+      <div class="chat-subbar">
+        <select id="thread-select" class="thread-select"></select>
+        <button type="button" class="btn btn-sm" id="btn-new-thread">+</button>
+        <button type="button" class="btn btn-sm" id="btn-del-thread">Del</button>
+        <button type="button" class="btn btn-sm" id="btn-toggle-quick">⚡ Prompts</button>
+      </div>
+      <div class="quick-drawer" id="quick-drawer">
+        <button type="button" class="chip" data-prompt="Scan my watchlist for 100K+ Shorts (last 90 days) and give me the top 3 non-slop ideas we can bend for Capital Glazer in flat 2D.">Scan Watchlist</button>
+        <button type="button" class="chip" data-prompt="Search YouTube Shorts (last 90 days, 100K+ views) for 'bank loophole' and 'money scam' to find tiny channels blowing up.">Hunt New Channels</button>
+        <button type="button" class="chip" data-prompt="Check my cached outliers and tell me which hook pattern is beating 10x median right now.">Analyze Cached Winners</button>
+        <button type="button" class="chip" data-prompt="Audit these screenshots and pull the best performing topics for Capital Glazer.">Audit Screenshots</button>
+      </div>
+
+      <div class="chat-messages" id="chat-messages"></div>
+
+      <div class="status-bar" id="status-bar">
+        <span id="status-text">Hydrogen is thinking...</span>
+        <button type="button" class="btn btn-sm btn-red" id="btn-stop">Stop</button>
+      </div>
+      <div class="pending-imgs" id="pending-imgs"></div>
+      <div class="chat-input-bar">
+        <input type="file" id="img-input" accept="image/*" multiple hidden />
+        <button type="button" class="btn" id="btn-attach" title="Attach images">📷</button>
+        <textarea id="chat-input" rows="1" placeholder="Message Hydrogen..."></textarea>
+        <button type="button" class="btn btn-primary" id="btn-send">Send</button>
+      </div>
+    </section>
+
+    <!-- TAB 2: OUTLIERS -->
+    <section id="tab-outliers" class="tab-pane">
+      <div class="card">
+        <div class="row between" style="margin-bottom:8px;">
+          <strong>YouTube Scanner</strong>
+          <span class="muted" id="quota-pill">Quota: 0 / 10k</span>
+        </div>
+        <div class="row">
+          <input type="text" id="kw-input" placeholder="Keyword search (e.g. bank scam, loophole)" style="flex:1;" />
+          <button type="button" class="btn btn-sm" id="btn-kw-search">Search</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-scan-wl">Scan Watchlist</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div style="flex:1;"><label>Days</label><input type="number" id="f-days" value="90" /></div>
+          <div style="flex:1;"><label>Min Views</label><input type="number" id="f-minviews" value="100000" step="50000" /></div>
+          <div style="flex:1;"><label>Sort</label>
+            <select id="f-sort">
+              <option value="outlier">OutlierX</option>
+              <option value="vph">VPH</option>
+              <option value="views">Views</option>
+              <option value="vsub">Views/Sub</option>
+            </select>
+          </div>
+        </div>
+        <div id="outliers-status" class="muted" style="margin-top:8px;"></div>
+      </div>
+
+      <div id="outliers-list"></div>
+    </section>
+
+    <!-- TAB 3: STUDIO -->
+    <section id="tab-studio" class="tab-pane">
+      <div class="seg">
+        <button type="button" class="active" id="seg-script-btn">Script Lab</button>
+        <button type="button" id="seg-ideas-btn">Idea Bank</button>
+      </div>
+
+      <div id="pane-script">
+        <div class="card">
+          <strong>215-WPM Shorts Script Checker</strong>
+          <p class="muted" style="margin:4px 0 10px;">Target: Sentence #1 &le;18 words (&lt;5s), total &le;45s, zero "subscribe" outro.</p>
+          <textarea id="script-box" class="box" rows="8" placeholder="Paste your Capital Glazer draft here..."></textarea>
+          <div class="stat-grid">
+            <div class="stat-box"><div class="stat-val" id="sc-words">0</div><div class="stat-lbl">Words</div></div>
+            <div class="stat-box"><div class="stat-val" id="sc-secs">0s</div><div class="stat-lbl">Est. Time</div></div>
+            <div class="stat-box"><div class="stat-val" id="sc-hook">0w</div><div class="stat-lbl">Hook #1</div></div>
+          </div>
+          <div id="sc-flags" class="muted" style="margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <div id="pane-ideas" style="display:none;">
+        <div class="row between" style="margin-bottom:10px;">
+          <strong>Saved Idea Bank</strong>
+          <button type="button" class="btn btn-sm" id="btn-add-manual-idea">+ Add Idea</button>
+        </div>
+        <div id="ideas-list"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SETTINGS -->
+    <section id="tab-settings" class="tab-pane">
+      <div class="card">
+        <strong>API Keys (Saved Locally on Phone)</strong>
+        <label>YouTube Data API v3 Key</label>
+        <input type="password" id="cfg-yt" placeholder="AIza..." />
+        <label>Gemini API Key (Free at aistudio.google.com)</label>
+        <input type="password" id="cfg-gem" placeholder="AIza..." />
+        <div class="row" style="margin-top:12px;">
+          <button type="button" class="btn btn-primary" id="btn-save-cfg">Save Keys</button>
+          <button type="button" class="btn" id="btn-test-settings">Test Keys & Check Models</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>Watchlist Channels</strong>
+        <div class="row" style="margin-top:8px;">
+          <input type="text" id="new-handle" placeholder="Add @handle (e.g. @celyxi)" style="flex:1;" />
+          <button type="button" class="btn btn-sm" id="btn-add-handle">Add</button>
+        </div>
+        <div class="wl-tags" id="wl-tags"></div>
+      </div>
+
+      <div class="card">
+        <strong>Channel Rules (System Prompt)</strong>
+        <textarea id="cfg-sys" class="box" rows="5" style="margin-top:8px;"></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button type="button" class="btn btn-sm" id="btn-save-sys">Save Rules</button>
+          <button type="button" class="btn btn-sm" id="btn-reset-sys">Reset Default</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>Backup & Cache</strong>
+        <div class="row" style="margin-top:8px;">
+          <button type="button" class="btn btn-sm" id="btn-export">Export JSON</button>
+          <input type="file" id="import-file" accept=".json" hidden />
+          <button type="button" class="btn btn-sm" id="btn-import">Import JSON</button>
+          <button type="button" class="btn btn-sm btn-red" id="btn-clear-cache">Clear Outliers</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav>
+    <button type="button" class="nav-btn active" data-tab="chat"><span class="nav-icon">💬</span><span>Hydrogen</span></button>
+    <button type="button" class="nav-btn" data-tab="outliers"><span class="nav-icon">🔥</span><span>Outliers</span></button>
+    <button type="button" class="nav-btn" data-tab="studio"><span class="nav-icon">🎬</span><span>Studio</span></button>
+    <button type="button" class="nav-btn" data-tab="settings"><span class="nav-icon">⚙️</span><span>Settings</span></button>
+  </nav>
+</div>
+
+<script>
+(() => {
+  const STORE_KEY = "capital_studio_v1";
+  const PRESET_MODELS = ["gemini-4-hydrogen", "gemini-4-argon", "gemini-4-carbon", "gemini-3.8-flash"];
+  const DEFAULT_WATCHLIST = [
+    "@RicksClips3000", "@celyxi", "@wobblytale", "@wobblybusiness",
+    "@oddwright", "@segmentzero", "@lostclips6868", "@thebuildup3d", "@capitalglazer"
+  ];
+  const DEFAULT_SYS = `You are the AI strategist & scanner brain inside Capital Studio for "Capital Glazer".
+RULES:
+- Niche: Money, markets, scams, grey-market hustles, corporate power, real financial history & loopholes.
+- Visual limit: FLAT VECTOR 2D animation ONLY (no 3D lighting/CGI).
+- Zero-Slop: Reject beginner finance clichés ("How McDonald's makes money", "How gyms make money").
+- Proven Demand: Base recommendations on verified 100K+ Shorts outliers (last 90 days) or direct cross-niche story bends.
+- Pacing: Frame-1 concrete action (<18 words / <5s), ~215 WPM, counterintuitive twist at 2/3rds, hard stop (ZERO "subscribe" CTA).
+- Tools available: scan_channels, search_outliers, inspect_video, get_cached_outliers, save_idea, manage_watchlist. Use them for real data—never guess view counts.`;
+
+  const todayStr = () => new Date().toISOString().slice(0, 10);
+  const logs = [];
+  let errCount = 0;
+
+  function addLog(level, msg) {
+    const t = new Date().toTimeString().slice(0, 8);
+    logs.push({ t, level, msg: String(msg) });
+    if (logs.length > 150) logs.shift();
+    if (level === "ERR") errCount++;
+    renderLogs();
+  }
+
+  function renderLogs() {
+    const badge = document.getElementById("err-badge");
+    const btn = document.getElementById("btn-toggle-logs");
+    if (errCount > 0) {
+      badge.textContent = `(${errCount})`;
+      btn.classList.add("has-err");
+    } else {
+      badge.textContent = "";
+      btn.classList.remove("has-err");
+    }
+    const box = document.getElementById("log-box");
+    box.innerHTML = logs.length
+      ? logs.map(l => `<div class="log-line log-${l.level}">[${l.t}] ${l.level}: ${escapeHtml(l.msg)}</div>`).join("")
+      : `<div class="muted">No logs yet. Tap "Test APIs" or send a message.</div>`;
+    box.scrollTop = box.scrollHeight;
+  }
+
+  window.addEventListener("error", (e) => addLog("ERR", `JS Error: ${e.message}`));
+  window.addEventListener("unhandledrejection", (e) => addLog("ERR", `Async Error: ${e.reason?.message || e.reason}`));
+
+  function loadState() {
+    let s = null;
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) s = JSON.parse(raw);
+    } catch (e) {}
+    if (!s || typeof s !== "object") s = {};
+    s.ytKey = s.ytKey || "";
+    s.gemKey = s.gemKey || "";
+    s.model = s.model || "gemini-4-hydrogen";
+    s.thinkingLevel = s.thinkingLevel || "medium";
+    s.sysPrompt = s.sysPrompt || DEFAULT_SYS;
+    s.watchlist = Array.isArray(s.watchlist) && s.watchlist.length ? s.watchlist : [...DEFAULT_WATCHLIST];
+    s.outliers = Array.isArray(s.outliers) ? s.outliers : [];
+    s.ideas = Array.isArray(s.ideas) ? s.ideas : [];
+    s.quota = (s.quota && s.quota.date === todayStr()) ? s.quota : { date: todayStr(), units: 0 };
+    if (!Array.isArray(s.threads) || !s.threads.length) {
+      s.threads = [{
+        id: "t_" + Date.now(),
+        title: "Main Strategy",
+        apiHistory: [],
+        uiMessages: [{ role: "model", text: "Ready. Select **gemini-4-hydrogen**, tap **Logs → Test APIs** to verify your key, or send a message." }]
+      }];
+    }
+    if (!s.activeThreadId || !s.threads.find(t => t.id === s.activeThreadId)) {
+      s.activeThreadId = s.threads[0].id;
+    }
+    return s;
+  }
+
+  let state = loadState();
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    } catch (e) {
+      state.threads.forEach(t => {
+        t.apiHistory = t.apiHistory.slice(-14).map(m => ({
+          ...m, parts: (m.parts || []).map(p => p.inlineData ? { text: "[previous image]" } : p)
+        }));
+      });
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {}
+    }
+    updateHeaderUI();
+  }
+
+  function addQuota(u) {
+    if (state.quota.date !== todayStr()) state.quota = { date: todayStr(), units: 0 };
+    state.quota.units += u;
+    saveState();
+  }
+
+  function updateHeaderUI() {
+    document.getElementById("quota-pill").textContent = `Quota: ${state.quota.units.toLocaleString()} / 10k`;
+    document.getElementById("hdr-model").textContent = state.model.replace("gemini-4-", "").replace("gemini-", "");
+  }
+
+  function escapeHtml(s) {
+    return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // ---------- TOP DRAWERS (MODEL & LOGS) ----------
+  const modelDrawer = document.getElementById("model-drawer");
+  const logDrawer = document.getElementById("log-drawer");
+
+  document.getElementById("btn-toggle-model").addEventListener("click", () => {
+    logDrawer.classList.remove("open");
+    modelDrawer.classList.toggle("open");
+  });
+  document.getElementById("btn-close-model").addEventListener("click", () => modelDrawer.classList.remove("open"));
+
+  document.getElementById("btn-toggle-logs").addEventListener("click", () => {
+    modelDrawer.classList.remove("open");
+    logDrawer.classList.toggle("open");
+    if (logDrawer.classList.contains("open")) { errCount = 0; renderLogs(); }
+  });
+  document.getElementById("btn-close-logs").addEventListener("click", () => logDrawer.classList.remove("open"));
+  document.getElementById("btn-clear-logs").addEventListener("click", () => { logs.length = 0; errCount = 0; renderLogs(); });
+  document.getElementById("btn-copy-logs").addEventListener("click", async () => {
+    const txt = logs.map(l => `[${l.t}] ${l.level}: ${l.msg}`).join("\n");
+    try { await navigator.clipboard.writeText(txt); addLog("OK", "Logs copied to clipboard."); }
+    catch { prompt("Copy logs:", txt); }
+  });
+
+  function syncModelPickers() {
+    const sel = document.getElementById("hdr-model-sel");
+    const customInp = document.getElementById("hdr-custom-model");
+    if (PRESET_MODELS.includes(state.model)) {
+      sel.value = state.model;
+      customInp.style.display = "none";
+    } else {
+      sel.value = "__custom__";
+      customInp.style.display = "block";
+      customInp.value = state.model;
+    }
+    document.getElementById("hdr-think-sel").value = state.thinkingLevel || "medium";
+    updateHeaderUI();
+  }
+
+  document.getElementById("hdr-model-sel").addEventListener("change", (e) => {
+    const customInp = document.getElementById("hdr-custom-model");
+    if (e.target.value === "__custom__") {
+      customInp.style.display = "block";
+      customInp.focus();
+    } else {
+      customInp.style.display = "none";
+      state.model = e.target.value;
+      saveState();
+      addLog("INFO", `Model switched to ${state.model}`);
+    }
+  });
+  document.getElementById("hdr-custom-model").addEventListener("change", (e) => {
+    const v = e.target.value.trim();
+    if (v) { state.model = v; saveState(); addLog("INFO", `Custom model set: ${v}`); }
+  });
+  document.getElementById("hdr-think-sel").addEventListener("change", (e) => {
+    state.thinkingLevel = e.target.value;
+    saveState();
+    addLog("INFO", `Thinking level set to ${state.thinkingLevel}`);
+  });
+
+  // ---------- NAVIGATION ----------
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ---------- YOUTUBE SCANNER ----------
+  const YT_BASE = "https://www.googleapis.com/youtube/v3";
+
+  function parseDuration(iso) {
+    const m = (iso || "").match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+    if (!m) return 9999;
+    return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0);
+  }
+
+  function extractVideoId(input) {
+    const s = (input || "").trim();
+    const m = s.match(/(?:shorts\/|youtu\.be\/|v=)([A-Za-z0-9_-]{11})/) || s.match(/^([A-Za-z0-9_-]{11})$/);
+    return m ? m[1] : null;
+  }
+
+  async function ytGet(endpoint, params, quotaCost = 1) {
+    if (!state.ytKey) throw new Error("YouTube API key missing in Settings.");
+    const url = new URL(`${YT_BASE}/${endpoint}`);
+    Object.entries({ ...params, key: state.ytKey }).forEach(([k, v]) => url.searchParams.set(k, v));
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    addQuota(quotaCost);
+    if (!res.ok || data.error) {
+      const msg = data.error?.message || `HTTP ${res.status}`;
+      addLog("ERR", `YT ${endpoint}: ${msg}`);
+      throw new Error(`YouTube (${endpoint}): ${msg}`);
+    }
+    return data;
+  }
+
+  function median(nums) {
+    if (!nums.length) return 1;
+    const s = [...nums].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return (s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2) || 1;
+  }
+
+  async function scanChannelsTool(handles, daysBack = 90, minViews = 100000, maxSec = 180) {
+    const list = (handles && handles.length) ? handles : state.watchlist;
+    addLog("INFO", `Scanning ${list.length} channels (${daysBack}d, >=${minViews})`);
+    const cutoffMs = Date.now() - daysBack * 86400000;
+    const nowMs = Date.now();
+    const newOutliers = [];
+    const summary = [];
+
+    for (const rawH of list) {
+      const clean = rawH.trim().startsWith("@") ? rawH.trim() : "@" + rawH.trim();
+      const chRes = await ytGet("channels", { part: "snippet,contentDetails,statistics", forHandle: clean }, 1);
+      const ch = chRes.items && chRes.items[0];
+      if (!ch) { summary.push(`${clean}: not found`); continue; }
+
+      const subs = parseInt(ch.statistics.subscriberCount || 0);
+      const uploadsId = ch.contentDetails.relatedPlaylists.uploads;
+      let ids = [], pageToken = null, stop = false;
+
+      while (ids.length < 100 && !stop) {
+        const plParams = { part: "contentDetails", playlistId: uploadsId, maxResults: 50 };
+        if (pageToken) plParams.pageToken = pageToken;
+        const pl = await ytGet("playlistItems", plParams, 1);
+        const items = pl.items || [];
+        if (!items.length) break;
+        for (const it of items) {
+          const pub = it.contentDetails.videoPublishedAt;
+          if (pub && new Date(pub).getTime() < cutoffMs) { stop = true; break; }
+          ids.push(it.contentDetails.videoId);
+        }
+        pageToken = pl.nextPageToken;
+        if (!pageToken) break;
+      }
+
+      const shorts = [];
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const vRes = await ytGet("videos", { part: "snippet,contentDetails,statistics", id: batch.join(",") }, 1);
+        for (const v of (vRes.items || [])) {
+          const dur = parseDuration(v.contentDetails.duration);
+          if (dur > maxSec) continue;
+          const views = parseInt(v.statistics.viewCount || 0);
+          const likes = parseInt(v.statistics.likeCount || 0);
+          const hrs = Math.max((nowMs - new Date(v.snippet.publishedAt).getTime()) / 3600000, 1);
+          shorts.push({
+            id: v.id, source: clean, channelId: ch.id, subs,
+            title: v.snippet.title.replace(/\s+/g, " "),
+            published: v.snippet.publishedAt.slice(0, 10),
+            dur, views, likes,
+            likeRate: views ? +((likes / views) * 100).toFixed(2) : 0,
+            vph: Math.round(views / hrs),
+            vSub: +(views / Math.max(subs, 1)).toFixed(1),
+            thumb: v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.default?.url || "",
+            url: `https://youtube.com/shorts/${v.id}`
+          });
+        }
+      }
+
+      const med = median(shorts.map(s => s.views));
+      let hitCount = 0;
+      for (const s of shorts) {
+        if (s.views >= minViews) {
+          s.median = Math.round(med);
+          s.outlierX = +(s.views / med).toFixed(1);
+          newOutliers.push(s);
+          hitCount++;
+        }
+      }
+      summary.push(`${clean}: ${hitCount} hits`);
+    }
+
+    mergeOutliers(newOutliers);
+    renderOutliers();
+    addLog("OK", `Watchlist scan done: ${newOutliers.length} hits cached.`);
+    return { summary, count: newOutliers.length, topHits: newOutliers.sort((a,b) => b.outlierX - a.outlierX).slice(0, 35) };
+  }
+
+  async function searchOutliersTool(keyword, daysBack = 90, minViews = 100000) {
+    addLog("INFO", `Keyword search: "${keyword}"`);
+    const cutoffIso = new Date(Date.now() - daysBack * 86400000).toISOString();
+    const sRes = await ytGet("search", {
+      part: "id", q: keyword, type: "video", videoDuration: "short",
+      order: "viewCount", publishedAfter: cutoffIso, maxResults: 25
+    }, 100);
+
+    const ids = (sRes.items || []).map(x => x.id.videoId).filter(Boolean);
+    if (!ids.length) return { keyword, count: 0, hits: [] };
+
+    const vRes = await ytGet("videos", { part: "snippet,contentDetails,statistics", id: ids.join(",") }, 1);
+    const rawItems = (vRes.items || []).filter(v => {
+      const dur = parseDuration(v.contentDetails.duration);
+      const views = parseInt(v.statistics.viewCount || 0);
+      return dur <= 180 && views >= minViews;
+    });
+
+    const chIds = [...new Set(rawItems.map(v => v.snippet.channelId))];
+    const subMap = {};
+    if (chIds.length) {
+      const cRes = await ytGet("channels", { part: "statistics,snippet", id: chIds.slice(0, 50).join(",") }, 1);
+      for (const c of (cRes.items || [])) {
+        subMap[c.id] = { subs: parseInt(c.statistics.subscriberCount || 0), handle: c.snippet.customUrl || c.snippet.title };
+      }
+    }
+
+    const nowMs = Date.now();
+    const hits = rawItems.map(v => {
+      const views = parseInt(v.statistics.viewCount || 0);
+      const likes = parseInt(v.statistics.likeCount || 0);
+      const hrs = Math.max((nowMs - new Date(v.snippet.publishedAt).getTime()) / 3600000, 1);
+      const chInfo = subMap[v.snippet.channelId] || { subs: 0, handle: v.snippet.channelTitle };
+      return {
+        id: v.id,
+        source: chInfo.handle.startsWith("@") ? chInfo.handle : `${chInfo.handle} (KW:${keyword})`,
+        channelId: v.snippet.channelId, subs: chInfo.subs,
+        title: v.snippet.title.replace(/\s+/g, " "),
+        published: v.snippet.publishedAt.slice(0, 10),
+        dur: parseDuration(v.contentDetails.duration), views, likes,
+        likeRate: views ? +((likes / views) * 100).toFixed(2) : 0,
+        vph: Math.round(views / hrs),
+        vSub: +(views / Math.max(chInfo.subs, 1)).toFixed(1),
+        outlierX: 0, median: 0,
+        thumb: v.snippet.thumbnails?.high?.url || "",
+        url: `https://youtube.com/shorts/${v.id}`
+      };
+    });
+
+    mergeOutliers(hits);
+    renderOutliers();
+    addLog("OK", `Keyword "${keyword}": ${hits.length} hits found.`);
+    return { keyword, count: hits.length, hits: hits.sort((a,b) => b.vSub - a.vSub) };
+  }
+
+  async function inspectVideoTool(videoUrlOrId) {
+    const vid = extractVideoId(videoUrlOrId);
+    if (!vid) return { error: "Invalid YouTube video ID/URL." };
+    const vRes = await ytGet("videos", { part: "snippet,contentDetails,statistics", id: vid }, 1);
+    const v = vRes.items && vRes.items[0];
+    if (!v) return { error: "Video not found." };
+
+    let comments = [];
+    try {
+      const cRes = await ytGet("commentThreads", { part: "snippet", videoId: vid, order: "relevance", maxResults: 10 }, 1);
+      comments = (cRes.items || []).map(c => c.snippet.topLevelComment.snippet.textDisplay.replace(/<[^>]+>/g, " "));
+    } catch { comments = ["Comments unavailable."]; }
+
+    const views = parseInt(v.statistics.viewCount || 0);
+    const likes = parseInt(v.statistics.likeCount || 0);
+    return {
+      id: vid, channel: v.snippet.channelTitle, title: v.snippet.title,
+      published: v.snippet.publishedAt.slice(0, 10), durationSeconds: parseDuration(v.contentDetails.duration),
+      views, likes, likeRatePercent: views ? +((likes / views) * 100).toFixed(2) : 0,
+      description: (v.snippet.description || "").slice(0, 600), topComments: comments
+    };
+  }
+
+  function mergeOutliers(items) {
+    const map = new Map(state.outliers.map(x => [x.id, x]));
+    items.forEach(it => map.set(it.id, it));
+    state.outliers = Array.from(map.values()).slice(0, 300);
+    saveState();
+  }
+
+  // ---------- GEMINI API + TOOLS ----------
+  const GEMINI_TOOLS = [{
+    functionDeclarations: [
+      {
+        name: "scan_channels",
+        description: "Scan YouTube channels for Shorts in the last N days with >= minViews.",
+        parameters: { type: "OBJECT", properties: { handles: { type: "ARRAY", items: { type: "STRING" } }, days_back: { type: "INTEGER" }, min_views: { type: "INTEGER" } } }
+      },
+      {
+        name: "search_outliers",
+        description: "Search all of YouTube for Shorts matching a keyword in the last N days plus creator sub counts.",
+        parameters: { type: "OBJECT", properties: { keyword: { type: "STRING" }, days_back: { type: "INTEGER" }, min_views: { type: "INTEGER" } }, required: ["keyword"] }
+      },
+      {
+        name: "inspect_video",
+        description: "Fetch description, engagement, and top comments for a Short URL or ID.",
+        parameters: { type: "OBJECT", properties: { video_url_or_id: { type: "STRING" } }, required: ["video_url_or_id"] }
+      },
+      { name: "get_cached_outliers", description: "Read locally cached outliers (0 quota).", parameters: { type: "OBJECT", properties: {} } },
+      {
+        name: "save_idea",
+        description: "Save a concept to the Studio Idea Bank.",
+        parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, source_ref: { type: "STRING" }, notes: { type: "STRING" } }, required: ["title", "notes"] }
+      },
+      {
+        name: "manage_watchlist",
+        description: "List or add a @handle to the saved watchlist.",
+        parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["list", "add"] }, handle: { type: "STRING" } }, required: ["action"] }
+      }
+    ]
+  }];
+
+  async function executeTool(name, args = {}) {
+    if (name === "scan_channels") return await scanChannelsTool(args.handles, args.days_back || 90, args.min_views || 100000);
+    if (name === "search_outliers") return await searchOutliersTool(args.keyword, args.days_back || 90, args.min_views || 100000);
+    if (name === "inspect_video") return await inspectVideoTool(args.video_url_or_id);
+    if (name === "get_cached_outliers") return { totalCached: state.outliers.length, top40: [...state.outliers].sort((a,b) => (b.outlierX || b.vSub) - (a.outlierX || a.vSub)).slice(0, 40) };
+    if (name === "save_idea") {
+      state.ideas.unshift({ id: "id_" + Date.now(), title: args.title, ref: args.source_ref || "", notes: args.notes, status: "To Research", date: todayStr() });
+      saveState(); renderIdeas();
+      return { saved: true, totalIdeas: state.ideas.length };
+    }
+    if (name === "manage_watchlist") {
+      if (args.action === "add" && args.handle) {
+        const h = args.handle.startsWith("@") ? args.handle : "@" + args.handle;
+        if (!state.watchlist.includes(h)) { state.watchlist.push(h); saveState(); renderWatchlist(); }
+      }
+      return { watchlist: state.watchlist };
+    }
+    return { error: `Unknown tool: ${name}` };
+  }
+
+  async function callGemini(apiHistory, signal) {
+    const model = (state.model || "gemini-4-hydrogen").trim();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(state.gemKey)}`;
+    const body = {
+      systemInstruction: {
+        parts: [{ text: `${state.sysPrompt}\n\nWatchlist: ${state.watchlist.join(", ")}\nCached outliers: ${state.outliers.length}` }]
+      },
+      contents: apiHistory,
+      tools: GEMINI_TOOLS
+    };
+    if (/^gemini-[34]/.test(model)) {
+      body.generationConfig = { thinkingConfig: { thinkingLevel: state.thinkingLevel || "medium" } };
+    }
+
+    const t0 = performance.now();
+    addLog("INFO", `POST ${model} (think=${state.thinkingLevel}, msgs=${apiHistory.length})`);
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal
+    });
+
+    const rawText = await res.text();
+    let data;
+    try { data = JSON.parse(rawText); }
+    catch { throw new Error(`HTTP ${res.status} non-JSON response: ${rawText.slice(0, 180)}`); }
+
+    if (!res.ok || data.error) {
+      const msg = data.error?.message || `HTTP ${res.status}`;
+      addLog("ERR", `Gemini HTTP ${res.status}: ${msg}`);
+      throw new Error(`HTTP ${res.status}: ${msg}`);
+    }
+
+    const sec = ((performance.now() - t0) / 1000).toFixed(1);
+    addLog("OK", `${model} responded in ${sec}s`);
+
+    const cand = data.candidates && data.candidates[0];
+    if (!cand || !cand.content) {
+      const reason = cand?.finishReason || data.promptFeedback?.blockReason || "empty candidate";
+      throw new Error(`No response content (${reason}).`);
+    }
+    return cand.content;
+  }
+
+  // ---------- TEST APIs & LIST MODELS ----------
+  async function testApis() {
+    logDrawer.classList.add("open");
+    errCount = 0;
+    addLog("INFO", "--- Running API Diagnostics ---");
+
+    if (!state.ytKey) addLog("ERR", "YouTube key is empty in Settings.");
+    else {
+      try {
+        await ytGet("channels", { part: "id", forHandle: "@YouTube" }, 1);
+        addLog("OK", "YouTube Data API v3 key works!");
+      } catch (e) { addLog("ERR", e.message); }
+    }
+
+    if (!state.gemKey) addLog("ERR", "Gemini key is empty in Settings.");
+    else {
+      try {
+        const mRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(state.gemKey)}`);
+        const mData = await mRes.json();
+        if (!mRes.ok || mData.error) throw new Error(mData.error?.message || `HTTP ${mRes.status}`);
+        const names = (mData.models || []).map(m => m.name.replace("models/", "")).filter(n => n.includes("gemini-4") || n.includes("gemini-3"));
+        addLog("OK", `Key valid. Available G3/G4 models: ${names.slice(0, 12).join(", ") || "none listed"}`);
+
+        const model = state.model || "gemini-4-hydrogen";
+        const pingRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(state.gemKey)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: "Reply with OK only." }] }] })
+        });
+        const pingData = await pingRes.json();
+        if (!pingRes.ok || pingData.error) throw new Error(`${model} -> HTTP ${pingRes.status}: ${pingData.error?.message}`);
+        const reply = (pingData.candidates?.[0]?.content?.parts || []).filter(p => p.text && !p.thought).map(p => p.text).join("");
+        addLog("OK", `${model} live test passed: "${reply.trim()}"`);
+      } catch (e) { addLog("ERR", `Gemini test failed: ${e.message}`); }
+    }
+  }
+
+  document.getElementById("btn-test-apis").addEventListener("click", testApis);
+  document.getElementById("btn-test-settings").addEventListener("click", testApis);
+
+  // ---------- CHAT UI + SEND FLOW ----------
+  let pendingImages = [];
+  let activeAbort = null;
+  let timerInterval = null;
+
+  function compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const maxDim = 1280;
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            const sc = Math.min(maxDim / w, maxDim / h);
+            w = Math.round(w * sc); h = Math.round(h * sc);
+          }
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          c.getContext("2d").drawImage(img, 0, 0, w, h);
+          const dataUrl = c.toDataURL("image/jpeg", 0.82);
+          resolve({ dataUrl, mimeType: "image/jpeg", base64: dataUrl.split(",")[1] });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById("btn-attach").addEventListener("click", () => document.getElementById("img-input").click());
+  document.getElementById("img-input").addEventListener("change", async (e) => {
+    for (const f of e.target.files) pendingImages.push(await compressImage(f));
+    e.target.value = "";
+    renderPendingImgs();
+  });
+
+  function renderPendingImgs() {
+    const el = document.getElementById("pending-imgs");
+    el.innerHTML = "";
+    pendingImages.forEach((img, idx) => {
+      const w = document.createElement("div");
+      w.className = "pending-thumb";
+      w.innerHTML = `<img src="${img.dataUrl}" /><button type="button">×</button>`;
+      w.querySelector("button").addEventListener("click", () => { pendingImages.splice(idx, 1); renderPendingImgs(); });
+      el.appendChild(w);
+    });
+  }
+
+  function formatMd(text) {
+    let h = escapeHtml(text);
+    h = h.replace(/`([^`]+)`/g, "<code>$1</code>");
+    h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    h = h.replace(/^### (.+)$/gm, "<h3>$1</h3>");
+    h = h.replace(/^## (.+)$/gm, "<h2>$1</h2>");
+    h = h.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    return h.replace(/\n/g, "<br>");
+  }
+
+  function getActiveThread() {
+    return state.threads.find(t => t.id === state.activeThreadId) || state.threads[0];
+  }
+
+  function renderChat() {
+    const sel = document.getElementById("thread-select");
+    sel.innerHTML = state.threads.map(t => `<option value="${t.id}" ${t.id === state.activeThreadId ? "selected" : ""}>${escapeHtml(t.title)}</option>`).join("");
+    const t = getActiveThread();
+    const box = document.getElementById("chat-messages");
+    box.innerHTML = "";
+    t.uiMessages.forEach(m => {
+      const div = document.createElement("div");
+      div.className = `msg ${m.role}`;
+      let html = "";
+      if (m.images && m.images.length) html += `<div class="msg-imgs">${m.images.map(src => `<img src="${src}" />`).join("")}</div>`;
+      html += (m.role === "tool-log" || m.role === "err-msg") ? escapeHtml(m.text) : formatMd(m.text);
+      div.innerHTML = html;
+      box.appendChild(div);
+    });
+    box.scrollTop = box.scrollHeight;
+  }
+
+  document.getElementById("thread-select").addEventListener("change", (e) => {
+    state.activeThreadId = e.target.value; saveState(); renderChat();
+  });
+  document.getElementById("btn-new-thread").addEventListener("click", () => {
+    const name = prompt("Chat title:", `Session ${state.threads.length + 1}`);
+    if (!name) return;
+    const id = "t_" + Date.now();
+    state.threads.unshift({ id, title: name, apiHistory: [], uiMessages: [] });
+    state.activeThreadId = id; saveState(); renderChat();
+  });
+  document.getElementById("btn-del-thread").addEventListener("click", () => {
+    if (state.threads.length <= 1) return;
+    state.threads = state.threads.filter(t => t.id !== state.activeThreadId);
+    state.activeThreadId = state.threads[0].id; saveState(); renderChat();
+  });
+  document.getElementById("btn-toggle-quick").addEventListener("click", () => {
+    document.getElementById("quick-drawer").classList.toggle("open");
+  });
+
+  function setBusy(busy) {
+    const sb = document.getElementById("status-bar");
+    const sendBtn = document.getElementById("btn-send");
+    const stText = document.getElementById("status-text");
+    sendBtn.disabled = busy;
+    clearInterval(timerInterval);
+    if (busy) {
+      sb.classList.add("active");
+      const start = Date.now();
+      stText.textContent = `${state.model} (${state.thinkingLevel}) thinking... 0s`;
+      timerInterval = setInterval(() => {
+        const s = Math.floor((Date.now() - start) / 1000);
+        stText.textContent = `${state.model} (${state.thinkingLevel}) thinking... ${s}s`;
+      }, 1000);
+    } else {
+      sb.classList.remove("active");
+    }
+  }
+
+  document.getElementById("btn-stop").addEventListener("click", () => {
+    if (activeAbort) activeAbort.abort();
+    addLog("INFO", "Request stopped by user.");
+  });
+
+  async function sendChat(customText) {
+    const inputEl = document.getElementById("chat-input");
+    const text = (customText !== undefined ? customText : inputEl.value).trim();
+    if (!text && !pendingImages.length) { addLog("INFO", "Send tapped with empty message."); return; }
+    if (!state.gemKey) {
+      addLog("ERR", "Send blocked: Gemini API key is missing in Settings.");
+      logDrawer.classList.add("open");
+      return;
+    }
+
+    const t = getActiveThread();
+    // Clean any dangling incomplete user turn from a prior crashed/reloaded request
+    while (t.apiHistory.length && t.apiHistory[t.apiHistory.length - 1].role === "user") {
+      t.apiHistory.pop();
+    }
+
+    const imgs = [...pendingImages];
+    if (customText === undefined) inputEl.value = "";
+    pendingImages = [];
+    renderPendingImgs();
+
+    const userParts = [];
+    imgs.forEach(im => userParts.push({ inlineData: { mimeType: im.mimeType, data: im.base64 } }));
+    if (text) userParts.push({ text });
+
+    t.uiMessages.push({ role: "user", text: text || "[Image]", images: imgs.map(i => i.dataUrl) });
+    const historyBackupLen = t.apiHistory.length;
+    t.apiHistory.push({ role: "user", parts: userParts });
+    saveState();
+    renderChat();
+
+    activeAbort = new AbortController();
+    const timeoutId = setTimeout(() => activeAbort.abort("Timed out after 55s"), 55000);
+    setBusy(true);
+
+    try {
+      for (let hop = 0; hop < 6; hop++) {
+        const modelContent = await callGemini(t.apiHistory, activeAbort.signal);
+        t.apiHistory.push(modelContent); // preserves thoughtSignature verbatim
+
+        const parts = modelContent.parts || [];
+        const fnParts = parts.filter(p => p.functionCall);
+        const replyText = parts.filter(p => p.text && !p.thought).map(p => p.text).join("\n").trim();
+
+        if (fnParts.length) {
+          const fnResponses = [];
+          for (const fp of fnParts) {
+            const fc = fp.functionCall;
+            t.uiMessages.push({ role: "tool-log", text: `⚙ ${fc.name}(${JSON.stringify(fc.args || {})})` });
+            renderChat();
+            let result;
+            try { result = await executeTool(fc.name, fc.args || {}); }
+            catch (err) { result = { error: err.message }; addLog("ERR", `Tool ${fc.name}: ${err.message}`); }
+            fnResponses.push({
+              functionResponse: { ...(fc.id ? { id: fc.id } : {}), name: fc.name, response: { result } }
+            });
+          }
+          t.apiHistory.push({ role: "user", parts: fnResponses });
+          saveState();
+        } else {
+          t.uiMessages.push({ role: "model", text: replyText || "(Empty response)" });
+          saveState();
+          renderChat();
+          break;
+        }
+      }
+    } catch (err) {
+      t.apiHistory.length = historyBackupLen; // keep API history valid for retry
+      const msg = err.name === "AbortError" ? "Stopped / timed out. Try Think: Low or check Logs." : err.message;
+      addLog("ERR", msg);
+      t.uiMessages.push({ role: "err-msg", text: `❌ ${msg}` });
+      saveState();
+      renderChat();
+    } finally {
+      clearTimeout(timeoutId);
+      activeAbort = null;
+      setBusy(false);
+    }
+  }
+
+  document.getElementById("btn-send").addEventListener("click", () => sendChat());
+  document.querySelectorAll(".chip").forEach(c => {
+    c.addEventListener("click", () => {
+      document.getElementById("quick-drawer").classList.remove("open");
+      sendChat(c.dataset.prompt);
+    });
+  });
+
+  // ---------- OUTLIERS UI ----------
+  function renderWatchlist() {
+    const el = document.getElementById("wl-tags");
+    el.innerHTML = "";
+    state.watchlist.forEach((h, i) => {
+      const tag = document.createElement("span");
+      tag.className = "wl-tag";
+      tag.innerHTML = `${escapeHtml(h)} <button type="button">×</button>`;
+      tag.querySelector("button").addEventListener("click", () => { state.watchlist.splice(i, 1); saveState(); renderWatchlist(); });
+      el.appendChild(tag);
+    });
+  }
+
+  document.getElementById("btn-add-handle").addEventListener("click", () => {
+    const inp = document.getElementById("new-handle");
+    let v = inp.value.trim();
+    if (!v) return;
+    if (!v.startsWith("@")) v = "@" + v;
+    if (!state.watchlist.includes(v)) { state.watchlist.push(v); saveState(); renderWatchlist(); addLog("INFO", `Added ${v}`); }
+    inp.value = "";
+  });
+
+  document.getElementById("btn-scan-wl").addEventListener("click", async () => {
+    const st = document.getElementById("outliers-status");
+    const btn = document.getElementById("btn-scan-wl");
+    btn.disabled = true; st.textContent = "Scanning watchlist...";
+    try {
+      const res = await scanChannelsTool(state.watchlist, parseInt(document.getElementById("f-days").value) || 90, parseInt(document.getElementById("f-minviews").value) || 100000);
+      st.textContent = `Done: ${res.count} hits cached.`;
+    } catch (e) { st.textContent = "Error: " + e.message; }
+    finally { btn.disabled = false; }
+  });
+
+  document.getElementById("btn-kw-search").addEventListener("click", async () => {
+    const kw = document.getElementById("kw-input").value.trim();
+    if (!kw) return;
+    const st = document.getElementById("outliers-status");
+    st.textContent = `Searching "${kw}"...`;
+    try {
+      const res = await searchOutliersTool(kw, parseInt(document.getElementById("f-days").value) || 90, parseInt(document.getElementById("f-minviews").value) || 100000);
+      st.textContent = `Keyword "${kw}": ${res.count} hits.`;
+    } catch (e) { st.textContent = "Error: " + e.message; }
+  });
+
+  document.getElementById("f-sort").addEventListener("change", renderOutliers);
+
+  function fmtViews(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.00$/, "") + "M";
+    if (n >= 1e3) return Math.round(n / 1e3) + "K";
+    return String(n);
+  }
+
+  function renderOutliers() {
+    const sortBy = document.getElementById("f-sort").value;
+    const list = [...state.outliers].sort((a, b) => {
+      if (sortBy === "vph") return b.vph - a.vph;
+      if (sortBy === "views") return b.views - a.views;
+      if (sortBy === "vsub") return b.vSub - a.vSub;
+      return (b.outlierX || b.vSub) - (a.outlierX || a.vSub);
+    });
+    const el = document.getElementById("outliers-list");
+    if (!list.length) { el.innerHTML = `<div class="muted">No outliers cached. Tap "Scan Watchlist" above.</div>`; return; }
+    el.innerHTML = "";
+    list.slice(0, 80).forEach(r => {
+      const card = document.createElement("div");
+      card.className = "outlier-card";
+      card.innerHTML = `
+        <img class="outlier-thumb" src="${escapeHtml(r.thumb)}" loading="lazy" />
+        <div class="outlier-body">
+          <div class="outlier-title"><a href="${escapeHtml(r.url)}" target="_blank" style="color:var(--text);text-decoration:none;">${escapeHtml(r.title)}</a></div>
+          <div class="muted">${escapeHtml(r.source)} • ${r.published} • ${r.dur}s</div>
+          <div class="metrics-line">${fmtViews(r.views)} views <span>${r.outlierX ? `• ${r.outlierX}x med` : ""}</span> • ${fmtViews(r.vph)}/hr • ${r.vSub}x subs</div>
+          <div class="row">
+            <button type="button" class="btn btn-sm btn-primary btn-ask">Ask Hydrogen</button>
+            <button type="button" class="btn btn-sm btn-save">+ Idea</button>
+          </div>
+        </div>`;
+      card.querySelector(".btn-ask").addEventListener("click", () => {
+        document.querySelector('[data-tab="chat"]').click();
+        sendChat(`Inspect and bend this verified outlier for Capital Glazer (flat 2D only): "${r.title}" (${r.views.toLocaleString()} views, ${r.outlierX}x median, ${r.vSub}x subs) — ${r.url}`);
+      });
+      card.querySelector(".btn-save").addEventListener("click", () => {
+        state.ideas.unshift({ id: "id_" + Date.now(), title: r.title, ref: r.url, notes: `${r.source} | ${fmtViews(r.views)} | ${r.outlierX}x`, status: "To Research", date: todayStr() });
+        saveState(); renderIdeas(); addLog("OK", `Saved "${r.title}" to Idea Bank.`);
+      });
+      el.appendChild(card);
+    });
+  }
+
+  // ---------- STUDIO TAB ----------
+  document.getElementById("seg-script-btn").addEventListener("click", (e) => {
+    e.target.classList.add("active"); document.getElementById("seg-ideas-btn").classList.remove("active");
+    document.getElementById("pane-script").style.display = "block"; document.getElementById("pane-ideas").style.display = "none";
+  });
+  document.getElementById("seg-ideas-btn").addEventListener("click", (e) => {
+    e.target.classList.add("active"); document.getElementById("seg-script-btn").classList.remove("active");
+    document.getElementById("pane-script").style.display = "none"; document.getElementById("pane-ideas").style.display = "block";
+  });
+
+  document.getElementById("script-box").addEventListener("input", (e) => {
+    const txt = e.target.value.trim();
+    const words = txt ? txt.split(/\s+/).length : 0;
+    const secs = Math.round((words / 215) * 60);
+    const first = (txt.split(/[.!?]\s|\n/)[0] || "").trim();
+    const hookW = first ? first.split(/\s+/).length : 0;
+    document.getElementById("sc-words").textContent = words;
+    document.getElementById("sc-secs").textContent = secs + "s";
+    document.getElementById("sc-hook").textContent = hookW + "w";
+    const flags = [];
+    if (hookW > 18) flags.push("⚠ Sentence #1 > 18 words (>5s).");
+    else if (hookW > 0) flags.push("✅ Hook under 5s.");
+    if (secs > 52) flags.push("⚠ Over 52s—cut bloat.");
+    if (/subscribe|follow/i.test(txt.slice(-120))) flags.push("🚫 Remove 'subscribe' ending.");
+    document.getElementById("sc-flags").textContent = flags.join("  ");
+  });
+
+  function renderIdeas() {
+    const el = document.getElementById("ideas-list");
+    if (!state.ideas.length) { el.innerHTML = `<div class="muted">No saved ideas yet.</div>`; return; }
+    el.innerHTML = "";
+    state.ideas.forEach((it, idx) => {
+      const c = document.createElement("div");
+      c.className = "card";
+      c.innerHTML = `
+        <div class="row between">
+          <strong>${escapeHtml(it.title)}</strong>
+          <select class="st-sel" style="width:auto;padding:4px 8px;font-size:11.5px;">
+            ${["To Research", "Scripted", "Posted"].map(s => `<option ${it.status === s ? "selected" : ""}>${s}</option>`).join("")}
+          </select>
+        </div>
+        <div class="muted" style="margin:6px 0;">${escapeHtml(it.notes)}</div>
+        <div class="row">
+          ${it.ref ? `<a href="${escapeHtml(it.ref)}" target="_blank" class="btn btn-sm" style="text-decoration:none;">Open Short</a>` : ""}
+          <button type="button" class="btn btn-sm btn-del">Delete</button>
+        </div>`;
+      c.querySelector(".st-sel").addEventListener("change", (e) => { it.status = e.target.value; saveState(); });
+      c.querySelector(".btn-del").addEventListener("click", () => { state.ideas.splice(idx, 1); saveState(); renderIdeas(); });
+      el.appendChild(c);
+    });
+  }
+
+  document.getElementById("btn-add-manual-idea").addEventListener("click", () => {
+    const title = prompt("Idea / Working Title:");
+    if (!title) return;
+    const notes = prompt("Notes / Angle:") || "";
+    state.ideas.unshift({ id: "id_" + Date.now(), title, ref: "", notes, status: "To Research", date: todayStr() });
+    saveState(); renderIdeas();
+  });
+
+  // ---------- SETTINGS ----------
+  document.getElementById("btn-save-cfg").addEventListener("click", () => {
+    state.ytKey = document.getElementById("cfg-yt").value.trim();
+    state.gemKey = document.getElementById("cfg-gem").value.trim();
+    saveState();
+    addLog("OK", "API keys saved locally.");
+    alert("Keys saved.");
+  });
+  document.getElementById("btn-save-sys").addEventListener("click", () => {
+    state.sysPrompt = document.getElementById("cfg-sys").value.trim() || DEFAULT_SYS;
+    saveState();
+    addLog("OK", "Channel rules updated.");
+  });
+  document.getElementById("btn-reset-sys").addEventListener("click", () => {
+    state.sysPrompt = DEFAULT_SYS;
+    document.getElementById("cfg-sys").value = DEFAULT_SYS;
+    saveState();
+  });
+  document.getElementById("btn-export").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }));
+    a.download = `capital-studio-${todayStr()}.json`;
+    a.click();
+  });
+  document.getElementById("btn-import").addEventListener("click", () => document.getElementById("import-file").click());
+  document.getElementById("import-file").addEventListener("change", async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { state = JSON.parse(await f.text()); saveState(); initUI(); addLog("OK", "Backup imported."); }
+    catch { addLog("ERR", "Invalid JSON backup file."); }
+  });
+  document.getElementById("btn-clear-cache").addEventListener("click", () => {
+    state.outliers = []; saveState(); renderOutliers(); addLog("INFO", "Outlier cache cleared.");
+  });
+
+  function initUI() {
+    syncModelPickers();
+    document.getElementById("cfg-yt").value = state.ytKey || "";
+    document.getElementById("cfg-gem").value = state.gemKey || "";
+    document.getElementById("cfg-sys").value = state.sysPrompt || DEFAULT_SYS;
+    renderChat();
+    renderWatchlist();
+    renderOutliers();
+    renderIdeas();
+    renderLogs();
+  }
+  initUI();
+})();
+</script>
+</body>
+</html>
